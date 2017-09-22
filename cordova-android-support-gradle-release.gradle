@@ -14,6 +14,9 @@ apply from: PLUGIN_NAME + '/properties.gradle'
 def LIBS = [
     'com.android.support'
 ]
+def ARTIFACTS=[
+  support-v4
+]
 
 println("+-----------------------------------------------------------------");
 println("| " + PLUGIN_NAME + ": " + ANDROID_SUPPORT_VERSION);
@@ -21,6 +24,6 @@ println("+-----------------------------------------------------------------");
 
 configurations.all {
     resolutionStrategy.eachDependency { DependencyResolveDetails details ->
-        if (details.requested.group in LIBS) { details.useVersion ANDROID_SUPPORT_VERSION }
+        if (details.requested.group in LIBS && details.requested.artifactId in ARTIFACTS) { details.useVersion ANDROID_SUPPORT_VERSION }
     }
 }
