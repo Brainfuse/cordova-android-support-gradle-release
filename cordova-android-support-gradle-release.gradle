@@ -15,7 +15,7 @@ def LIBS = [
     'com.android.support'
 ]
 def ARTIFACTS=[
-  support-v4
+  "support-v4"
 ]
 
 println("+-----------------------------------------------------------------");
@@ -24,6 +24,6 @@ println("+-----------------------------------------------------------------");
 
 configurations.all {
     resolutionStrategy.eachDependency { DependencyResolveDetails details ->
-        if (details.requested.group in LIBS && details.requested.artifactId in ARTIFACTS) { details.useVersion ANDROID_SUPPORT_VERSION }
+        if (details.requested.group in LIBS && details.requested.name in ARTIFACTS) { details.useVersion ANDROID_SUPPORT_VERSION }
     }
 }
