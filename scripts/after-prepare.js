@@ -4,7 +4,7 @@ var parser = require('xml2js');
 
 const PLUGIN_NAME         = "cordova-android-support-gradle-release";
 const GRADLE_FILENAME = path.resolve(process.cwd(), 'platforms', 'android', 'build.gradle');
-const PACKAGE_PATTERN = /(compile "com.android.support:[^:]+:)([^"]+)"/;
+const PACKAGE_PATTERN = /(compile "com.android.support:support-v4:)([^"]+)"/;
 
 // 1. Parse cordova.xml file and fetch this plugin's <variable name="ANDROID_SUPPORT_VERSION" />
 fs.readFile(path.resolve(process.cwd(), 'config.xml'), function (err, data) {
