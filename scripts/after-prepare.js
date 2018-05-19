@@ -41,6 +41,8 @@ function setGradleVersion(version) {
         if (err) {
             return console.log(PLUGIN_NAME, " ERROR: ", err);
         }
+        if(!contents)
+            return console.log(PLUGIN_NAME, " ERROR: GRADLE File is empty");
         contents = contents.toString();
         fs.writeFile(GRADLE_FILENAME, contents.replace(PACKAGE_PATTERN, "$1" + version + '"'), 'utf8', function (err) {
             if (err) return console.log(PLUGIN_NAME, ": FAILED TO WRITE ", GRADLE_FILENAME, " > ", version, err);
