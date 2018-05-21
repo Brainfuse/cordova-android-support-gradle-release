@@ -63,7 +63,7 @@ function run() {
 			fs.writeFileSync(buildGradlePath, result, 'utf8');
 			
             log("Wrote custom version '" + version + "' to " + buildGradlePath);
-			log (result)
+			
             // properties.gradle
             var propertiesGradlePath = path.resolve(process.cwd(), FILE_PATHS[platformVersion]["properties.gradle"]);
             fs.writeFileSync(propertiesGradlePath, PROPERTIES_TEMPLATE.replace(/<VERSION>/, version), 'utf8');
