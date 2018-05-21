@@ -1,57 +1,92 @@
-var fs = require('fs');
-var path = require('path');
-var parser = require('xml2js');
-
-const PLUGIN_NAME         = "cordova-android-support-gradle-release";
-const GRADLE_FILENAME = path.resolve(process.cwd(), 'platforms', 'android', 'build.gradle');
+const PLUGIN_NAME = "cordova-android-support-gradle-release";
+const V6 = "cordova-android@6";
+const V7 = "cordova-android@7";
 const PACKAGE_PATTERN = /(compile "com.android.support:[^:]+:)([^"]+)"\s*$/gm;
+const PROPERTIES_TEMPLATE = 'ext {ANDROID_SUPPORT_VERSION = "<VERSION>"}';
 
-// 1. Parse cordova.xml file and fetch this plugin's <variable name="ANDROID_SUPPORT_VERSION" />
-fs.readFile(path.resolve(process.cwd(), 'config.xml'), function (err, data) {
-    var json = parser.parseString(data, function (err, result) {
-        if (err) {
-            return console.log(PLUGIN_NAME, ": ERROR: ", err);
-        }
-        var plugins = result.widget.plugin;
-        if(!plugins || plugins.length === 0) return;
+var FILE_PATHS = {};
+FILE_PATHS[V6] = {
+    "build.gradle": "platforms/android/build.gradle",
+    "properties.gradle": "platforms/android/"+PLUGIN_NAME+"/properties.gradle"
+};
+FILE_PATHS[V7] = {
+    "build.gradle": "platforms/android/app/build.gradle",
+    "properties.gradle": "platforms/android/app/"+PLUGIN_NAME+"/properties.gradle"
+};
+
+var deferral, fs, path, parser, platformVersion;
+
+
+function log(message) {
+    console.log(PLUGIN_NAME + ": " + message);
+}
+
+function onError(error) {
+    log("ERROR: " + error);
+    deferral.resolve();
+}
+
+function getCordovaAndroidVersion(){
+    var testPath = path.join(process.cwd(), 'platforms/android/app/src');
+    return fs.existsSync(testPath) ? V7 : V6;
+}
+
+
+function run() {
+    try {
+        fs = require('fs');
+        path = require('path');
+        parser = require('xml2js');
+    } catch (e) {
+        throw("Failed to load dependencies. If using cordova@6 CLI, ensure this plugin is installed with the --fetch option: " + e.toString());
+    }
+
+    platformVersion = getCordovaAndroidVersion();
+    log("Android platform: " + platformVersion);
+
+    var data = fs.readFileSync(path.resolve(process.cwd(), 'config.xml'));
+    parser.parseString(data, attempt(function (err, result) {
+        if (err) throw err;
+        var version, plugins = result.widget.plugin;
         for (var n = 0, len = plugins.length; n < len; n++) {
             var plugin = plugins[n];
-            if (plugin.$.name === PLUGIN_NAME) {
-                if (!plugin.variable.length) {
-                    return console.log(PLUGIN_NAME, ' ERROR: FAILED TO FIND <variable name="ANDROID_SUPPORT_VERSION" /> in config.xml');
-                }
-                // 2.  Update .gradle file.
-                setGradleVersion(plugin.variable.pop().$.value);
+            if (plugin.$.name === PLUGIN_NAME && plugin.variable && plugin.variable.length > 0) {
+                version = plugin.variable.pop().$.value;
                 break;
             }
         }
-    });
-});
-
-/**
- * Write properties.gradle with:
- *
- ext {
-  ANDROID_SUPPORT_VERSION = '<VERSION>'
-}
- *
- */
-function setGradleVersion(version) {
-    fs.readFile(GRADLE_FILENAME, function (err, contents) {
-        if (err) {
-            return console.log(PLUGIN_NAME, " ERROR: ", err);
+        if (version) {
+            // build.gradle
+            var buildGradlePath = path.resolve(process.cwd(), FILE_PATHS[platformVersion]["build.gradle"]);
+            var contents = fs.readFileSync(buildGradlePath).toString();
+            var result = contents.replace(PACKAGE_PATTERN, "$1" + version + '"')
+			fs.writeFileSync(buildGradlePath, result, 'utf8');
+			
+            log("Wrote custom version '" + version + "' to " + buildGradlePath);
+			log (result)
+            // properties.gradle
+            var propertiesGradlePath = path.resolve(process.cwd(), FILE_PATHS[platformVersion]["properties.gradle"]);
+            fs.writeFileSync(propertiesGradlePath, PROPERTIES_TEMPLATE.replace(/<VERSION>/, version), 'utf8');
+            log("Wrote custom version '" + version + "' to " + propertiesGradlePath);
+        } else {
+            log("No custom version found in config.xml - using plugin default");
         }
-        if(!contents)
-            return console.log(PLUGIN_NAME, " ERROR: GRADLE File is empty");
-        contents = contents.toString();
-        fs.writeFile(GRADLE_FILENAME, contents.replace(PACKAGE_PATTERN, "$1" + version + '"'), 'utf8', function (err) {
-            if (err) return console.log(PLUGIN_NAME, ": FAILED TO WRITE ", GRADLE_FILENAME, " > ", version, err);
-            console.log(PLUGIN_NAME, ": WROTE ", GRADLE_FILENAME, " > ", version);
-        });
-    });
+        deferral.resolve();
+    }));
 }
 
+function attempt(fn) {
+    return function () {
+        try {
+            fn.apply(this, arguments);
+        } catch (e) {
+            onError("EXCEPTION: " + e.toString());
+        }
+    }
+}
 
-
-
-
+module.exports = function (ctx) {
+    deferral = ctx.requireCordovaModule('q').defer();
+    attempt(run)();
+    return deferral.promise;
+};
