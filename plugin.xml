@@ -9,7 +9,7 @@
     <author>Dave Alden</author>
 
     <platform name="android">
-        <hook type="before_prepare" src="scripts/before-prepare.js" />
+        <hook type="before_prepare" src="scripts/after-prepare.js" />
         <hook type="after_prepare" src="scripts/after-prepare.js" />
         <hook type="before_build" src="scripts/after-prepare.js" />
         
