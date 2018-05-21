@@ -25,9 +25,12 @@ println("+-----------------------------------------------------------------");
 configurations.all {
     resolutionStrategy.eachDependency { DependencyResolveDetails details ->
         if (details.requested.name in ARTIFACTS) { details.useVersion ANDROID_SUPPORT_VERSION }
-  			else if (details.requested.name =='appcompat-v7') {
-            details.useVersion cdvCompileSdkVersion.replace('android-','') + "+"
-        }
+  	else if (details.requested.name =='appcompat-v7') {
+            details.useVersion ANDROID_SUPPORT_VERSION
+        }else if (details.requested.name == 'support-v13'){
+		details.useVersion ANDROID_SUPPORT_VERSION
+	}
+	
 			
 			
     }
