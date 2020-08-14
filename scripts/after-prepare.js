@@ -42,7 +42,7 @@ function run() {
     }
 
     platformVersion = getCordovaAndroidVersion();
-    log("Android platform: " + platformVersion);
+    log("Android platform: " + platformVersion  + " process.cwd="  + process.cwd());
 
     var data = fs.readFileSync(path.resolve(process.cwd(), 'config.xml'));
     parser.parseString(data, attempt(function (err, result) {
